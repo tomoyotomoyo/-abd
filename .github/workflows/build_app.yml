@@ -1,0 +1,73 @@
+name: Build KFLog IPA
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build_app:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          brew install ldid dpkg
+
+      - name: Setup Theos
+        run: |
+          export THEOS=~/theos
+          echo "THEOS=$THEOS" >> $GITHUB_ENV
+          git clone --recursive https://github.com/theos/theos.git $THEOS
+          cd $THEOS
+          git submodule update --init --recursive
+
+      - name: Download iOS SDK
+        run: |
+          export THEOS=~/theos
+          mkdir -p $THEOS/sdks
+          curl -L -o /tmp/sdks.zip "https://github.com/theos/sdks/archive/refs/heads/master.zip" || true
+          if [ -f /tmp/sdks.zip ]; then
+            unzip -q /tmp/sdks.zip -d /tmp/
+            for sdk in /tmp/sdks-master/*.sdk; do
+              if [ -d "$sdk" ]; then
+                name=$(basename "$sdk")
+                [[ "$name" == iPhoneOS* ]] && cp -R "$sdk" "$THEOS/sdks/"
+              fi
+            done
+          fi
+          ls -la $THEOS/sdks/
+
+      - name: Build KFLog App
+        run: |
+          export THEOS=~/theos
+          cd app
+          echo "=== Building KFLog ==="
+          make clean
+          make package FINALPACKAGE=1
+          echo "=== Done ==="
+          ls -la .theos/
+
+      - name: Verify IPA
+        run: |
+          cd app/.theos
+          ls -la *.ipa 2>/dev/null || ls -la *.deb 2>/dev/null || true
+          find . -name "*.ipa" -o -name "*.deb" | head -5
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: KFLog-IPA
+          path: app/.theos/**/*.ipa
+          if-no-files-found: warn
+
+      - name: Upload DEB (fallback)
+        uses: actions/upload-artifact@v4
+        with:
+          name: KFLog-DEB
+          path: app/.theos/**/*.deb
+          if-no-files-found: warn
