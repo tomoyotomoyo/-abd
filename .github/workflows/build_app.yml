@@ -42,6 +42,11 @@ jobs:
           fi
           ls -la $THEOS/sdks/
 
+      - name: Prepare KFKernel sources
+        run: |
+          cp KFInit.c app/
+          cp -r kexploit sandbox apfs kpf xpf utils choma app/
+
       - name: Build KFLog App
         run: |
           export THEOS=~/theos
@@ -71,3 +76,4 @@ jobs:
           name: KFLog-DEB
           path: app/.theos/**/*.deb
           if-no-files-found: warn
+
