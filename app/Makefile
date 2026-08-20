@@ -3,9 +3,8 @@ ARCHS := arm64 arm64e
 
 THEOS ?= $(HOME)/theos
 
-# KFKernel engine sources (relative to this Makefile — app/ is inside KFKernel/)
+# KFKernel engine sources (relative to this Makefile — app/ is inside repo root)
 KF_DIR := ..
-KF_DIR := ../../KFKernel
 
 include $(THEOS)/makefiles/common.mk
 
